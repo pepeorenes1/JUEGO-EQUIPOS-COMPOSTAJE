@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Juego cooperativo sobre compostaje para cinco participantes">
+  <title>CompostaLab - Juego cooperativo de compostaje</title>
+
+  <style>
+    :root {
+      --green-950: #14321f;
+      --green-900: #1d4329;
+      --green-800: #275b36;
+      --green-700: #337545;
+      --green-600: #468d55;
+      --green-100: #dcefdc;
+      --green-50: #eff8ed;
+      --cream: #fffaf0;
+      --paper: #fffef8;
+      --brown: #724b2a;
+      --yellow: #f3c84b;
+      --red: #b93d39;
+      --red-soft: #fbe1de;
+      --blue: #286c98;
+      --blue-soft: #e0f1fb;
+      --ink: #203126;
+      --muted: #607065;
+      --border: #cbdacb;
+      --shadow: 0 14px 36px rgba(25, 61, 34, 0.16);
+      --radius: 22px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: #eaf4e6;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background:
+        radial-gradient(circle at 10% 15%, rgba(243, 200, 75, 0.22), transparent 24rem),
+        radial-gradient(circle at 90% 5%, rgba(70, 141, 85, 0.20), transparent 25rem),
+        linear-gradient(145deg, #f4f8e9, #e5f3e4);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 4px solid rgba(40, 108, 152, 0.28);
+      outline-offset: 3px;
+    }
+
+    .topbar {
+      padding: 18px 24px;
+      color: white;
+      background: linear-gradient(115deg, var(--green-950), var(--green-700));
+      box-shadow: 0 5px 20px rgba(20, 50, 31, 0.22);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      max-width: 1180px;
+      margin: auto;
+    }
+
+    .brand-icon {
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.62);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.13);
+      font-size: 26px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      letter-spacing: 0.02em;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: #e1f2df;
+      font-size: 0.92rem;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 28px auto 48px;
+    }
+
+    .screen {
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+      animation: enter 0.32s ease both;
+    }
+
+    @keyframes enter {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .panel {
+      padding: clamp(22px, 4vw, 42px);
+      border: 1px solid rgba(39, 91, 54, 0.15);
+      border-radius: var(--radius);
+      background: rgba(255, 254, 248, 0.95);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 7px 13px;
+      color: var(--green-900);
+      border-radius: 999px;
+      background: var(--green-100);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2,
+    h3,
+    p {
+      overflow-wrap: anywhere;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      color: var(--green-950);
+      font-size: clamp(1.7rem, 5vw, 3rem);
+      line-height: 1.08;
+    }
+
+    .lead {
+      max-width: 780px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+
+    .instructions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      max-width: 900px;
+      margin: 28px auto;
+    }
+
+    .instruction {
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--green-50);
+      text-align: left;
+    }
+
+    .instruction strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--green-900);
+    }
+
+    .number {
+      display: inline-grid;
+      width: 30px;
+      height: 30px;
+      margin-right: 7px;
+      place-items: center;
+      color: white;
+      border-radius: 50%;
+      background: var(--green-700);
+    }
+
+    .name-form {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .field {
+      text-align: left;
+    }
+
+    .field label {
+      display: block;
+      margin: 0 0 6px 3px;
+      color: var(--green-900);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .field input {
+      width: 100%;
+      min-height: 48px;
+      padding: 11px 13px;
+      color: var(--ink);
+      border: 2px solid var(--border);
+      border-radius: 13px;
+      background: white;
+    }
+
+    .field input:focus {
+      border-color: var(--green-600);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .btn {
+      min-height: 50px;
+      padding: 12px 24px;
+      color: white;
+      border: 0;
+      border-radius: 14px;
+      background: var(--green-700);
+      box-shadow: 0 7px 16px rgba(39, 91, 54, 0.2);
+      font-weight: 850;
+      cursor: pointer;
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        filter 0.15s ease;
+    }
+
+    .btn:hover:not(:disabled) {
+      filter: brightness(1.06);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 19px rgba(39, 91, 54, 0.25);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      cursor: not-allowed;
+      filter: grayscale(0.45);
+      opacity: 0.5;
+    }
+
+    .btn.secondary {
+      color: var(--green-900);
+      border: 2px solid var(--green-600);
+      background: white;
+      box-shadow: none;
+    }
+
+    .error {
+      min-height: 24px;
+      margin-top: 12px;
+      color: var(--red);
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .game-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .progress-box {
+      min-width: 0;
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      color: var(--green-900);
+      font-weight: 800;
+    }
+
+    .progress-track {
+      height: 14px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dfe9dc;
+    }
+
+    .progress-fill {
+      width: 10%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--yellow), var(--green-600));
+      transition: width 0.35s ease;
+    }
+
+    .score-box {
+      min-width: 120px;
+      padding: 13px 18px;
+      color: white;
+      border-radius: 16px;
+      background: var(--green-900);
+      text-align: center;
+    }
+
+    .score-box small {
+      display: block;
+      color: #dcefdc;
+    }
+
+    .score-box strong {
+      display: block;
+      font-size: 1.65rem;
+    }
+
+    .question-layout {
+      display: grid;
+      grid-template-columns: minmax(250px, 0.85fr) minmax(0, 1.45fr);
+      gap: 22px;
+    }
+
+    .object-card {
+      display: grid;
+      min-height: 410px;
+      padding: 28px;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      color: var(--green-950);
+      border: 2px solid #c6d9c2;
+      border-radius: 24px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.8)),
+        repeating-linear-gradient(
+          45deg,
+          #e7f2df 0,
+          #e7f2df 20px,
+          #f4f8e9 20px,
+          #f4f8e9 40px
+        );
+      text-align: center;
+    }
+
+    .card-number {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: grid;
+      width: 45px;
+      height: 45px;
+      place-items: center;
+      color: white;
+      border-radius: 50%;
+      background: var(--green-800);
+      font-size: 1.05rem;
+      font-weight: 900;
+    }
+
+    .object-emoji {
+      display: block;
+      margin-bottom: 12px;
+      font-size: clamp(5.5rem, 12vw, 9rem);
+      line-height: 1;
+      filter: drop-shadow(0 8px 8px rgba(39, 91, 54, 0.16));
+    }
+
+    .object-card h3 {
+      margin: 12px 0 9px;
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      text-transform: uppercase;
+    }
+
+    .object-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .voting-card {
+      padding: clamp(19px, 3vw, 30px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      background: white;
+    }
+
+    .voting-card h3 {
+      margin: 0;
+      color: var(--green-950);
+      font-size: 1.55rem;
+    }
+
+    .voting-help {
+      margin: 7px 0 19px;
+      color: var(--muted);
+    }
+
+    .voters {
+      display: grid;
+      gap: 10px;
+    }
+
+    .voter {
+      display: grid;
+      grid-template-columns: minmax(100px, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border: 1px solid #d9e4d7;
+      border-radius: 15px;
+      background: #fbfdf8;
+    }
+
+    .voter-name {
+      min-width: 0;
+      font-weight: 850;
+    }
+
+    .vote-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .vote {
+      min-width: 76px;
+      min-height: 43px;
+      padding: 8px 14px;
+      color: var(--ink);
+      border: 2px solid #ccd8ca;
+      border-radius: 11px;
+      background: white;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .vote:hover {
+      border-color: var(--green-600);
+    }
+
+    .vote.selected-yes {
+      color: white;
+      border-color: var(--green-700);
+      background: var(--green-700);
+    }
+
+    .vote.selected-no {
+      color: white;
+      border-color: var(--red);
+      background: var(--red);
+    }
+
+    .votes-status {
+      min-height: 24px;
+      margin: 15px 0 0;
+      color: var(--muted);
+      font-size: 0.93rem;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .result-panel {
+      max-width: 840px;
+      margin: auto;
+      text-align: center;
+    }
+
+    .result-state {
+      display: inline-grid;
+      width: 94px;
+      height: 94px;
+      margin-bottom: 13px;
+      place-items: center;
+      color: white;
+      border-radius: 50%;
+      font-size: 3rem;
+      font-weight: 950;
+    }
+
+    .result-state.correct {
+      background: var(--green-700);
+      box-shadow: 0 0 0 12px var(--green-100);
+    }
+
+    .result-state.wrong {
+      background: var(--red);
+      box-shadow: 0 0 0 12px var(--red-soft);
+    }
+
+    .result-panel h2 {
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+    }
+
+    .solution-card {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      align-items: center;
+      gap: 24px;
+      margin-top: 25px;
+      padding: 24px;
+      border: 2px solid var(--green-100);
+      border-radius: 22px;
+      background: var(--green-50);
+      text-align: left;
+    }
+
+    .solution-icon {
+      text-align: center;
+      font-size: 6rem;
+      line-height: 1;
+    }
+
+    .answer-badge {
+      display: inline-block;
+      padding: 7px 14px;
+      color: white;
+      border-radius: 999px;
+      background: var(--green-700);
+      font-weight: 950;
+    }
+
+    .answer-badge.no {
+      background: var(--red);
+    }
+
+    .solution-card h3 {
+      margin: 10px 0 7px;
+      color: var(--green-950);
+      font-size: 1.5rem;
+    }
+
+    .solution-card p {
+      margin: 0;
+      color: #405346;
+      font-size: 1.04rem;
+      line-height: 1.6;
+    }
+
+    .vote-summary {
+      margin-top: 17px;
+      padding: 12px 16px;
+      border-radius: 13px;
+      background: #f4f0e4;
+      font-weight: 800;
+    }
+
+    .final-panel {
+      max-width: 830px;
+      margin: auto;
+      text-align: center;
+    }
+
+    .trophy {
+      font-size: 5.5rem;
+      line-height: 1;
+    }
+
+    .final-score {
+      display: inline-block;
+      margin: 18px 0;
+      padding: 20px 35px;
+      color: white;
+      border-radius: 24px;
+      background: linear-gradient(135deg, var(--green-900), var(--green-600));
+      box-shadow: var(--shadow);
+    }
+
+    .final-score strong {
+      display: block;
+      font-size: clamp(3rem, 9vw, 5.7rem);
+      line-height: 1;
+    }
+
+    .final-score span {
+      font-weight: 800;
+    }
+
+    .team-list {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .review {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin: 27px 0 0;
+    }
+
+    .review-item {
+      padding: 11px 7px;
+      border-radius: 11px;
+      font-size: 0.86rem;
+      font-weight: 900;
+    }
+
+    .review-item.ok {
+      color: var(--green-900);
+      background: var(--green-100);
+    }
+
+    .review-item.fail {
+      color: #7b2421;
+      background: var(--red-soft);
+    }
+
+    .footer-note {
+      margin: 22px auto 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .name-form {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .question-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .object-card {
+        min-height: 300px;
+      }
+
+      .instructions {
+        grid-template-columns: 1fr;
+      }
+
+      .review {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 580px) {
+      main {
+        width: min(100% - 18px, 1180px);
+        margin-top: 16px;
+      }
+
+      .topbar {
+        padding: 13px 12px;
+      }
+
+      .brand {
+        justify-content: flex-start;
+      }
+
+      .brand p {
+        display: none;
+      }
+
+      .panel {
+        padding: 20px 15px;
+        border-radius: 18px;
+      }
+
+      .name-form {
+        grid-template-columns: 1fr;
+      }
+
+      .game-header {
+        grid-template-columns: 1fr;
+      }
+
+      .score-box {
+        justify-self: stretch;
+      }
+
+      .voter {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .vote-buttons {
+        justify-content: center;
+      }
+
+      .vote {
+        flex: 1;
+      }
+
+      .solution-card {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .review {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">🌱</div>
+      <div>
+        <h1>CompostaLab</h1>
+        <p>Decidid en equipo qué residuos pueden volver a la tierra</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="startScreen" class="screen active" aria-labelledby="startTitle">
+      <div class="panel">
+        <div class="hero">
+          <span class="eyebrow">Reto cooperativo</span>
+          <h2 id="startTitle">¿Qué podemos echar en la compostera?</h2>
+          <p class="lead">
+            Formad un equipo de cinco científicos y resolved diez preguntas.
+            En cada ronda, la opción elegida por la mayoría será la respuesta
+            del equipo.
+          </p>
+        </div>
+
+        <div class="instructions" aria-label="Instrucciones">
+          <div class="instruction">
+            <strong><span class="number">1</span>Elegid identidad</strong>
+            Cada participante escribe el nombre científico que quiera utilizar.
+          </div>
+
+          <div class="instruction">
+            <strong><span class="number">2</span>Votad</strong>
+            Las cinco personas deben seleccionar "Sí" o "No" en cada pregunta.
+          </div>
+
+          <div class="instruction">
+            <strong><span class="number">3</span>Sumad puntos</strong>
+            La mayoría decide. Cada acierto vale un punto y jugaréis diez rondas.
+          </div>
+        </div>
+
+        <form id="nameForm" novalidate>
+          <div class="name-form">
+            <div class="field">
+              <label for="player1">Científico/a 1</label>
+              <input id="player1" maxlength="24" autocomplete="off"
+                placeholder="Ej.: Dra. Clorofila" required>
+            </div>
+
+            <div class="field">
+              <label for="player2">Científico/a 2</label>
+              <input id="player2" maxlength="24" autocomplete="off"
+                placeholder="Ej.: Dr. Micelio" required>
+            </div>
+
+            <div class="field">
+              <label for="player3">Científico/a 3</label>
+              <input id="player3" maxlength="24" autocomplete="off"
+                placeholder="Ej.: Prof. Humus" required>
+            </div>
+
+            <div class="field">
+              <label for="player4">Científico/a 4</label>
+              <input id="player4" maxlength="24" autocomplete="off"
+                placeholder="Ej.: Dra. Lombriz" required>
+            </div>
+
+            <div class="field">
+              <label for="player5">Científico/a 5</label>
+              <input id="player5" maxlength="24" autocomplete="off"
+                placeholder="Ej.: Dr. Compost" required>
+            </div>
+          </div>
+
+          <p id="formError" class="error" role="alert" aria-live="polite"></p>
+
+          <div class="actions">
+            <button class="btn" type="submit">Aceptar y comenzar</button>
+          </div>
+        </form>
+      </div>
+
+      <p class="footer-note">
+        Actividad basada en las fichas "Compostaje en el huerto escolar".
+      </p>
+    </section>
+
+    <section id="gameScreen" class="screen" aria-labelledby="questionTitle">
+      <div class="game-header">
+        <div class="progress-box">
+          <div class="progress-labels">
+            <span id="roundLabel">Pregunta 1 de 10</span>
+            <span id="answeredLabel">0 de 5 votos</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="score-box" aria-label="Puntuación">
+          <small>Puntuación</small>
+          <strong><span id="scoreValue">0</span>/10</strong>
+        </div>
+      </div>
+
+      <div class="question-layout">
+        <article class="object-card" aria-live="polite">
+          <span id="cardNumber" class="card-number">1</span>
+
+          <div>
+            <span id="objectEmoji" class="object-emoji" aria-hidden="true">🍊</span>
+            <h3 id="objectName">Corteza de naranja</h3>
+            <p id="questionTitle">¿Podemos echarla en la compostera?</p>
+          </div>
+        </article>
+
+        <section class="voting-card" aria-labelledby="voteTitle">
+          <h3 id="voteTitle">Votación científica</h3>
+          <p class="voting-help">
+            Cada persona debe marcar una opción. La mayoría será la respuesta
+            final del equipo.
+          </p>
+
+          <div id="voters" class="voters"></div>
+
+          <p id="votesStatus" class="votes-status" aria-live="polite">
+            Faltan 5 votos.
+          </p>
+
+          <div class="actions">
+            <button id="confirmVote" class="btn" type="button" disabled>
+              Confirmar respuesta del equipo
+            </button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="screen" aria-labelledby="resultTitle">
+      <div class="panel result-panel">
+        <div id="resultState" class="result-state correct" aria-hidden="true">✓</div>
+        <span class="eyebrow">Solución de la ficha</span>
+        <h2 id="resultTitle">¡Respuesta correcta!</h2>
+        <p id="resultText" class="lead">El equipo gana un punto.</p>
+
+        <article class="solution-card">
+          <div id="solutionEmoji" class="solution-icon" aria-hidden="true">🍊</div>
+
+          <div>
+            <span id="answerBadge" class="answer-badge">SÍ SE PUEDE</span>
+            <h3 id="solutionName">Corteza de naranja</h3>
+            <p id="solutionExplanation"></p>
+          </div>
+        </article>
+
+        <div id="voteSummary" class="vote-summary"></div>
+
+        <div class="actions">
+          <button id="nextQuestion" class="btn" type="button">
+            Siguiente pregunta
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="finalScreen" class="screen" aria-labelledby="finalTitle">
+      <div class="panel final-panel">
+        <div class="trophy" aria-hidden="true">🏆</div>
+        <span class="eyebrow">Investigación terminada</span>
+        <h2 id="finalTitle">Resultado del equipo</h2>
+
+        <div class="final-score">
+          <strong id="finalScore">0/10</strong>
+          <span id="finalPercent">0 % de aciertos</span>
+        </div>
+
+        <p id="finalMessage" class="lead"></p>
+        <p id="teamList" class="team-list"></p>
+
+        <div id="review" class="review" aria-label="Resumen de las diez preguntas"></div>
+
+        <div class="actions">
+          <button id="playAgain" class="btn" type="button">
+            Jugar otra partida
+          </button>
+          <button id="newTeam" class="btn secondary" type="button">
+            Cambiar equipo
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    /*
+      Las explicaciones conservan el criterio didáctico de las fichas
+      proporcionadas. Los iconos son caracteres Unicode y no requieren
+      archivos externos.
+    */
+    const cards = [
+      {
+        id: 1,
+        name: "Corteza de naranja",
+        emoji: "🍊",
+        answer: true,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "Sí. Es un resto húmedo rico en agua y nutrientes como el nitrógeno. Conviene no abusar porque puede acidificar la mezcla."
+      },
+      {
+        id: 2,
+        name: "Corteza de plátano",
+        emoji: "🍌",
+        answer: true,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "Sí. Es un resto húmedo rico en agua y nutrientes como el nitrógeno."
+      },
+      {
+        id: 3,
+        name: "Corteza de piña",
+        emoji: "🍍",
+        answer: true,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "Sí. Es un resto húmedo que aporta agua y nutrientes, entre ellos nitrógeno."
+      },
+      {
+        id: 4,
+        name: "Restos de lechuga",
+        emoji: "🥬",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. Son restos húmedos ricos en agua y nutrientes como el nitrógeno."
+      },
+      {
+        id: 5,
+        name: "Restos de tomate",
+        emoji: "🍅",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. Son restos húmedos ricos en agua y nitrógeno. Conviene no abusar porque pueden acidificar la mezcla."
+      },
+      {
+        id: 6,
+        name: "Papel de periódico",
+        emoji: "📰",
+        answer: false,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "No, según la ficha. La tinta puede incorporar productos químicos al suelo."
+      },
+      {
+        id: 7,
+        name: "Papel de revista",
+        emoji: "📖",
+        answer: false,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "No. Las tintas y los tratamientos del papel pueden incorporar productos químicos al compost."
+      },
+      {
+        id: 8,
+        name: "Cáscara de huevo",
+        emoji: "🥚",
+        answer: true,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "Sí. Ayuda a aportar calcio al compost. Es mejor añadirla triturada."
+      },
+      {
+        id: 9,
+        name: "Restos de poda",
+        emoji: "🌿",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. Son restos secos que ayudan a aportar carbono y estructura a la mezcla."
+      },
+      {
+        id: 10,
+        name: "Restos de frutos secos",
+        emoji: "🥜",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. Son restos secos que aportan carbono."
+      },
+      {
+        id: 11,
+        name: "Malezas",
+        emoji: "🌱",
+        answer: false,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "No, según la ficha. Pueden contener semillas que sobrevivan al proceso de compostaje."
+      },
+      {
+        id: 12,
+        name: "Posos y restos de café",
+        emoji: "☕",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. Son restos húmedos ricos en agua y nutrientes como el nitrógeno."
+      },
+      {
+        id: 13,
+        name: "Flores",
+        emoji: "🌸",
+        answer: true,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "Sí. Se consideran restos húmedos ricos en agua y nutrientes."
+      },
+      {
+        id: 14,
+        name: "Saquitos de té",
+        emoji: "🍵",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí, según la ficha, retirando la etiqueta de papel impresa. Favorecen la descomposición."
+      },
+      {
+        id: 15,
+        name: "Excrementos de perros y gatos",
+        emoji: "🐾",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No. Las heces de animales carnívoros u omnívoros pueden contener bacterias y otros organismos nocivos."
+      },
+      {
+        id: 16,
+        name: "Pan",
+        emoji: "🍞",
+        answer: false,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "No, según la ficha. Puede favorecer hongos y atraer animales o plagas."
+      },
+      {
+        id: 17,
+        name: "Bollos",
+        emoji: "🥐",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No. Pueden favorecer hongos y atraer animales o plagas."
+      },
+      {
+        id: 18,
+        name: "Grasas",
+        emoji: "🧈",
+        answer: false,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "No. Las grasas dificultan el equilibrio de humedad y la aireación de la mezcla."
+      },
+      {
+        id: 19,
+        name: "Aceite",
+        emoji: "🫗",
+        answer: false,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "No. El aceite altera la humedad y dificulta el proceso de compostaje."
+      },
+      {
+        id: 20,
+        name: "Restos de pescado",
+        emoji: "🐟",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No es recomendable. Pueden producir malos olores y atraer moscas y otros animales."
+      },
+      {
+        id: 21,
+        name: "Restos de carne",
+        emoji: "🥩",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No es recomendable. Pueden producir malos olores y atraer moscas y otros animales."
+      },
+      {
+        id: 22,
+        name: "Colillas de cigarrillo",
+        emoji: "🚬",
+        answer: false,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "No. Contienen numerosas sustancias tóxicas que no deben incorporarse al suelo."
+      },
+      {
+        id: 23,
+        name: "Cenizas de cigarrillo",
+        emoji: "⚱️",
+        answer: true,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "Sí, según la ficha. Aportan potasio y pueden ayudar frente a algunas plagas y hongos."
+      },
+      {
+        id: 24,
+        name: "Leche",
+        emoji: "🥛",
+        answer: false,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "No. Puede generar malos olores y atraer insectos."
+      },
+      {
+        id: 25,
+        name: "Yogur",
+        emoji: "🥣",
+        answer: false,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "No. Puede producir malos olores y atraer insectos."
+      },
+      {
+        id: 26,
+        name: "Quesos",
+        emoji: "🧀",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No. Pueden producir malos olores y atraer insectos u otros animales."
+      },
+      {
+        id: 27,
+        name: "Plásticos",
+        emoji: "🧴",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No. Son materiales inorgánicos y deben depositarse en el contenedor de reciclaje correspondiente."
+      },
+      {
+        id: 28,
+        name: "Fiambres",
+        emoji: "🥓",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No es recomendable. Pueden producir malos olores y atraer moscas y otras plagas."
+      },
+      {
+        id: 29,
+        name: "Metales",
+        emoji: "🥫",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No. Son materiales inorgánicos y deben llevarse al contenedor de reciclaje correspondiente."
+      },
+      {
+        id: 30,
+        name: "Restos de pasta",
+        emoji: "🍝",
+        answer: false,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "No, según la ficha. Los alimentos cocinados pueden atraer plagas."
+      },
+      {
+        id: 31,
+        name: "Serrín",
+        emoji: "🪵",
+        answer: true,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "Sí, sin abusar y solo si procede de madera no tratada ni de tableros conglomerados. Aporta materia seca."
+      },
+      {
+        id: 32,
+        name: "Césped cortado",
+        emoji: "🌾",
+        answer: true,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "Sí. Es materia húmeda rica en agua y nutrientes como el nitrógeno."
+      },
+      {
+        id: 33,
+        name: "Plumas",
+        emoji: "🪶",
+        answer: true,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "Sí. Son ricas en nutrientes como el nitrógeno."
+      },
+      {
+        id: 34,
+        name: "Servilletas de papel",
+        emoji: "◻️",
+        answer: true,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "Sí, siempre que no contengan tintas y sin abusar. Aportan materia seca."
+      },
+      {
+        id: 35,
+        name: "Cartón",
+        emoji: "📦",
+        answer: true,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "Sí, siempre que no contenga tintas o tratamientos y sin abusar. Es mejor trocearlo."
+      },
+      {
+        id: 36,
+        name: "Algodón",
+        emoji: "☁️",
+        answer: true,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "Sí, si es algodón puro y no contiene fibras sintéticas. Aporta materia seca."
+      },
+      {
+        id: 37,
+        name: "Cabello",
+        emoji: "💇",
+        answer: true,
+        question: "¿Podemos echarlo en la compostera?",
+        explanation:
+          "Sí. El cabello y el pelo de las mascotas pueden incorporarse como materia seca."
+      },
+      {
+        id: 38,
+        name: "Plantas enfermas",
+        emoji: "🥀",
+        answer: false,
+        question: "¿Podemos echarlas en la compostera?",
+        explanation:
+          "No. Pueden conservar organismos patógenos y transmitir enfermedades a otras plantas."
+      },
+      {
+        id: 39,
+        name: "Tapones de corcho",
+        emoji: "🍾",
+        answer: true,
+        question: "¿Podemos echarlos en la compostera?",
+        explanation:
+          "Sí. El corcho natural es orgánico y, troceado, ayuda a favorecer la oxigenación."
+      },
+      {
+        id: 40,
+        name: "Lana",
+        emoji: "🧶",
+        answer: true,
+        question: "¿Podemos echarla en la compostera?",
+        explanation:
+          "Sí, si es lana natural. Es una materia seca de origen animal."
+      }
+    ];
+
+    const TOTAL_QUESTIONS = 10;
+
+    const state = {
+      players: [],
+      questions: [],
+      round: 0,
+      score: 0,
+      votes: [],
+      history: []
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+
+    const screens = {
+      start: $("#startScreen"),
+      game: $("#gameScreen"),
+      result: $("#resultScreen"),
+      final: $("#finalScreen")
+    };
+
+    function showScreen(name) {
+      Object.values(screens).forEach((screen) => {
+        screen.classList.remove("active");
+      });
+
+      screens[name].classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function shuffle(array) {
+      const copy = [...array];
+
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[randomIndex]] = [copy[randomIndex], copy[i]];
+      }
+
+      return copy;
+    }
+
+    function startGame() {
+      state.questions = shuffle(cards).slice(0, TOTAL_QUESTIONS);
+      state.round = 0;
+      state.score = 0;
+      state.votes = Array(5).fill(null);
+      state.history = [];
+
+      $("#scoreValue").textContent = "0";
+      renderQuestion();
+      showScreen("game");
+    }
+
+    function renderQuestion() {
+      const card = state.questions[state.round];
+
+      state.votes = Array(5).fill(null);
+
+      $("#roundLabel").textContent =
+        `Pregunta ${state.round + 1} de ${TOTAL_QUESTIONS}`;
+      $("#progressFill").style.width =
+        `${((state.round + 1) / TOTAL_QUESTIONS) * 100}%`;
+      $("#scoreValue").textContent = state.score;
+      $("#cardNumber").textContent = card.id;
+      $("#objectEmoji").textContent = card.emoji;
+      $("#objectName").textContent = card.name;
+      $("#questionTitle").textContent = card.question;
+      $("#confirmVote").disabled = true;
+
+      const voters = $("#voters");
+      voters.innerHTML = "";
+
+      state.players.forEach((player, index) => {
+        const row = document.createElement("div");
+        row.className = "voter";
+
+        const name = document.createElement("span");
+        name.className = "voter-name";
+        name.textContent = player;
+
+        const buttons = document.createElement("div");
+        buttons.className = "vote-buttons";
+
+        const yes = createVoteButton("Sí", true, index);
+        const no = createVoteButton("No", false, index);
+
+        buttons.append(yes, no);
+        row.append(name, buttons);
+        voters.append(row);
+      });
+
+      updateVoteStatus();
+    }
+
+    function createVoteButton(label, value, playerIndex) {
+      const button = document.createElement("button");
+
+      button.type = "button";
+      button.className = "vote";
+      button.textContent = label;
+      button.dataset.value = String(value);
+      button.setAttribute(
+        "aria-label",
+        `${state.players[playerIndex]} responde ${label}`
+      );
+
+      button.addEventListener("click", () => {
+        state.votes[playerIndex] = value;
+
+        const siblings = button.parentElement.querySelectorAll(".vote");
+        siblings.forEach((item) => {
+          item.classList.remove("selected-yes", "selected-no");
+          item.setAttribute("aria-pressed", "false");
+        });
+
+        button.classList.add(value ? "selected-yes" : "selected-no");
+        button.setAttribute("aria-pressed", "true");
+        updateVoteStatus();
+      });
+
+      return button;
+    }
+
+    function updateVoteStatus() {
+      const completed = state.votes.filter((vote) => vote !== null).length;
+      const remaining = state.players.length - completed;
+
+      $("#answeredLabel").textContent =
+        `${completed} de ${state.players.length} votos`;
+
+      if (remaining === 0) {
+        $("#votesStatus").textContent =
+          "Todos han votado. Ya podéis confirmar la respuesta.";
+      } else if (remaining === 1) {
+        $("#votesStatus").textContent = "Falta 1 voto.";
+      } else {
+        $("#votesStatus").textContent = `Faltan ${remaining} votos.`;
+      }
+
+      $("#confirmVote").disabled = remaining !== 0;
+    }
+
+    function confirmAnswer() {
+      if (state.votes.some((vote) => vote === null)) {
+        return;
+      }
+
+      const card = state.questions[state.round];
+      const yesVotes = state.votes.filter(Boolean).length;
+      const noVotes = state.votes.length - yesVotes;
+      const teamAnswer = yesVotes > noVotes;
+      const correct = teamAnswer === card.answer;
+
+      if (correct) {
+        state.score += 1;
+      }
+
+      state.history.push({
+        card,
+        correct,
+        teamAnswer,
+        yesVotes,
+        noVotes
+      });
+
+      renderResult(card, correct, teamAnswer, yesVotes, noVotes);
+      showScreen("result");
+    }
+
+    function renderResult(card, correct, teamAnswer, yesVotes, noVotes) {
+      const resultState = $("#resultState");
+
+      resultState.className = `result-state ${correct ? "correct" : "wrong"}`;
+      resultState.textContent = correct ? "✓" : "×";
+
+      $("#resultTitle").textContent =
+        correct ? "¡Respuesta correcta!" : "Esta vez no ha sido correcto";
+
+      $("#resultText").textContent = correct
+        ? "El equipo gana un punto."
+        : "El equipo obtiene cero puntos en esta ronda.";
+
+      $("#solutionEmoji").textContent = card.emoji;
+      $("#solutionName").textContent = card.name;
+      $("#solutionExplanation").textContent = card.explanation;
+
+      const badge = $("#answerBadge");
+      badge.textContent = card.answer ? "SÍ SE PUEDE" : "NO SE PUEDE";
+      badge.className = `answer-badge${card.answer ? "" : " no"}`;
+
+      $("#voteSummary").textContent =
+        `Votación: ${yesVotes} Sí y ${noVotes} No. ` +
+        `Respuesta del equipo: ${teamAnswer ? "Sí" : "No"}.`;
+
+      $("#nextQuestion").textContent =
+        state.round === TOTAL_QUESTIONS - 1
+          ? "Ver puntuación final"
+          : "Siguiente pregunta";
+    }
+
+    function nextRound() {
+      if (state.round === TOTAL_QUESTIONS - 1) {
+        renderFinal();
+        showScreen("final");
+        return;
+      }
+
+      state.round += 1;
+      renderQuestion();
+      showScreen("game");
+    }
+
+    function renderFinal() {
+      const percent = Math.round((state.score / TOTAL_QUESTIONS) * 100);
+
+      $("#finalScore").textContent = `${state.score}/${TOTAL_QUESTIONS}`;
+      $("#finalPercent").textContent = `${percent} % de aciertos`;
+      $("#teamList").textContent =
+        `Equipo científico: ${state.players.join(", ")}.`;
+
+      let message;
+
+      if (state.score === 10) {
+        message =
+          "¡Investigación impecable! Domináis los criterios de las fichas de compostaje.";
+      } else if (state.score >= 8) {
+        message =
+          "¡Excelente trabajo! Vuestro equipo sabe cuidar muy bien una compostera.";
+      } else if (state.score >= 6) {
+        message =
+          "¡Buen trabajo! Habéis tomado muchas decisiones correctas en equipo.";
+      } else if (state.score >= 4) {
+        message =
+          "Vais por buen camino. Revisad las soluciones para afianzar qué residuos conviene utilizar.";
+      } else {
+        message =
+          "Esta investigación os deja nuevas pistas. Las explicaciones os ayudarán en la próxima partida.";
+      }
+
+      $("#finalMessage").textContent = message;
+
+      const review = $("#review");
+      review.innerHTML = "";
+
+      state.history.forEach((entry, index) => {
+        const item = document.createElement("div");
+        item.className = `review-item ${entry.correct ? "ok" : "fail"}`;
+        item.textContent =
+          `${index + 1}. ${entry.correct ? "✓" : "×"} ${entry.card.name}`;
+        review.append(item);
+      });
+    }
+
+    $("#nameForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const inputs = [...document.querySelectorAll(".field input")];
+      const names = inputs.map((input) => input.value.trim());
+      const error = $("#formError");
+
+      if (names.some((name) => name.length === 0)) {
+        error.textContent =
+          "Las cinco personas deben escribir su nombre científico.";
+        const firstEmpty = inputs.find((input) => !input.value.trim());
+        firstEmpty.focus();
+        return;
+      }
+
+      const normalizedNames = names.map((name) => name.toLocaleLowerCase("es"));
+
+      if (new Set(normalizedNames).size !== names.length) {
+        error.textContent =
+          "Cada participante debe utilizar un nombre científico diferente.";
+        return;
+      }
+
+      error.textContent = "";
+      state.players = names;
+      startGame();
+    });
+
+    $("#confirmVote").addEventListener("click", confirmAnswer);
+    $("#nextQuestion").addEventListener("click", nextRound);
+    $("#playAgain").addEventListener("click", startGame);
+
+    $("#newTeam").addEventListener("click", () => {
+      state.players = [];
+      $("#nameForm").reset();
+      $("#formError").textContent = "";
+      showScreen("start");
+      $("#player1").focus();
+    });
+  </script>
+</body>
+</html>
